@@ -5,9 +5,10 @@ import crypt
 import hashlib
 import sqlite3
 import ConfigParser
+import subprocess
 
 from flask import session, render_template, g, flash, request, jsonify
-
+from lwp.lxclite import lxcdir
 
 """
 cgroup_ext is a data structure where for each input of edit.html we have an array with:
@@ -178,3 +179,11 @@ def check_htpasswd(htpasswd_file, username, password):
             return crypt.crypt(password, htpasswd) == htpasswd
         else:
             return hmac.compare_digest(crypt.crypt(password, htpasswd), htpasswd)
+
+
+def getSize(containerName):
+    if containerName:
+        partition = lxcdir()
+        container = partition + '/' + containerName
+        size = subprocess.check_output(['du -sh %s' % container], shell=True).split()
+        return size[0]

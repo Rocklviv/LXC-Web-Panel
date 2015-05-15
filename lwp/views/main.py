@@ -11,7 +11,7 @@ from flask import Blueprint, request, session, g, redirect, url_for, abort, rend
 
 import lwp
 import lwp.lxclite as lxc
-from lwp.utils import query_db, if_logged_in, get_bucket_token, hash_passwd, config, cgroup_ext
+from lwp.utils import query_db, if_logged_in, get_bucket_token, hash_passwd, config, cgroup_ext, getSize
 from lwp.views.auth import AUTH
 
 # TODO: see if we can move this block somewhere better
@@ -627,3 +627,19 @@ def refresh_memory_containers(name=None):
 @if_logged_in()
 def check_version():
     return jsonify(lwp.check_version())
+
+
+@mod.route('/_get_size_container', methods=['POST'])
+@if_logged_in()
+def get_size_container():
+    if request.method == 'POST':
+        json = request.json
+        result = []
+
+        for n in json:
+            name = n['name']
+            size = getSize(name)
+            r = ({'name': name, 'size': size})
+            result.append(r)
+
+        return jsonify({'result': result})

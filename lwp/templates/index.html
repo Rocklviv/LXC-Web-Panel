@@ -50,6 +50,7 @@
                 <th class="hidden-phone">Hostname</th>
                 <th>IP Address</th>
                 <th>Mem. usage</th>
+                <th>Container size</th>
                 <th class="hidden-phone">Auto Start</th>
                 <th>Actions</th>
             </tr>
@@ -63,6 +64,7 @@
                         <td class="hidden-phone">{{container.settings.utsname}}</td>
                         <td>{% if container.settings.ipv4  %}{{container.settings.ipv4}}{% else %}-{% endif %}</td>
                         <td id="{{container.name}}">{{ render_memory_wrapper(container.memusg, container.settings.memlimit) }}</td>
+                        <td class="size" id="{{container.name}}"></td>
                         <td class="hidden-phone">
                             {% if container.settings.start_auto == '1' %}
                                 <i class="icon-ok"></i>
@@ -112,6 +114,38 @@
 
 {% block script %}
 <script type="text/javascript">
+
+            function getSize() {
+                var name = $('.size');
+                var i = 0;
+                var data = [];
+
+                for (; i < name.length; i++) {
+                    data.push({
+                        'name': name[i].id 
+                    });
+                }
+                $.ajax({
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    method: 'POST',
+                    url: '{{ url_for('main.get_size_container') }}',
+                    data: JSON.stringify(data),
+                    async: true,
+                    success: function(result) {
+                        var res = result['result'];
+                        for (var i = 0; i < res.length; i++) {
+                            var div = $('.size');
+                            for (var j = 0; j < div.length; j++) {
+                                if (div[j].id == res[i]['name']) {
+                                    div[j].innerHTML = res[i]['size'];
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             function refreshMemoryHost(){
                 $.getJSON('{{ url_for('main.refresh_memory_containers', name='host') }}', function(data) {
                     $('#memory-usage').text(data.used +' / '+ data.total +' MB').fadeIn();
@@ -163,12 +197,16 @@
 
                     refreshMemoryHost()
                 });
+                window.setWindowLoaded = true;
             }
 
             $(function() {
                 refresh();
                 {% if session.su == 'Yes' and containers == [] %}$('#createCT').modal('show'){% endif %}
                 window.setInterval('refresh()', 15000);
+                if (window.setWindowLoaded) {
+                    getSize();
+                }
             });
 
             {% if session.su == 'Yes' %}$(document).ready(function(){
